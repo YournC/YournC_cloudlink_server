@@ -1,19 +1,14 @@
-# Use a lightweight Python base image
 FROM python:3.11-slim
 
-# Set the working directory
 WORKDIR /app
 
-# Copy project files
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies in one go
+RUN pip install --no-cache-dir cloudlink ujson cerberus snowflake-id websockets
+
+# Copy your code
 COPY . .
 
-# Install required dependencies
-RUN pip install cloudlink ujson cerberus snowflake-id websockets
+# Cloudlink servers usually need to stay unbuffered to see logs in Render
+ENV PYTHONUNBUFFERED=1
 
-# Expose the port (Render handles mapping automatically via the $PORT env var)
-EXPOSE 10000
-
-# Run the server
 CMD ["python", "main.py"]
