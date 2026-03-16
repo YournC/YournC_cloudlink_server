@@ -8,7 +8,9 @@ WORKDIR /app
 COPY . .
 
 # Install required dependencies
-RUN pip install cloudlink ujson cerberus snowflake-id websockets
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
 
 # Expose the port (Render handles mapping automatically via the $PORT env var)
 EXPOSE 10000
