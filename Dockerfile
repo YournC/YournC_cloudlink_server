@@ -8,15 +8,10 @@ WORKDIR /app
 COPY . .
 
 # Install required dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
+RUN pip install cloudlink ujson cerberus snowflake-id websockets
 
 # Expose the port (Render handles mapping automatically via the $PORT env var)
 EXPOSE 10000
 
 # Run the server
-if __name__ == "__main__":
-    print(f"Starting Cloudlink 4.0 server on port {port}...")
-    # Cloudlink 4 usually expects 'ip' instead of 'host'
-    server_inst.run(ip="0.0.0.0", port=port)
+CMD ["python", "main.py"]
