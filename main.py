@@ -1,34 +1,34 @@
 import os
+import asyncio
 import http
 from cloudlink import server
 from cloudlink.server.protocols import clpv4
 
-# Custom handler to satisfy Render's health checks
+# This function prevents the "HEAD" request crash
 async def health_check(path, request_headers):
-    # If the request is not a WebSocket upgrade (like Render's HEAD/GET pings)
     if "upgrade" not in request_headers.get("Connection", "").lower():
-        # Return a standard HTTP 200 OK response
         return http.HTTPStatus.OK, [], b"OK"
     return None
 
-def main():
+async def start_server():
     server_inst = server()
-    
-    # Render provides the port via environment variable
     port = int(os.environ.get("PORT", 10000))
-    
-    # Initialize the protocol
     cl_protocol = clpv4(server_inst)
     
-    print(f"Cloudlink 4.0 starting on port {port} with Health Check support...")
+    print(f"Starting Cloudlink 4.0 on port {port}...")
 
-    # We inject the health_check into the underlying websockets server
-    # Cloudlink 4.0 uses the 'ip' parameter for binding
-    server_inst.run(
-        ip="0.0.0.0", 
-        port=port, 
-        process_request=health_check # This is the magic line
-    )
+    # We bypass the 'server_inst.run' wrapper to access the websocket settings directly
+    # This allows us to use process_request without the TypeError
+    async with server_inst.asyncio_server.serve(
+        server_inst._server_loop, # The internal handler
+        host="0.0.0.0",
+        port=port,
+        process_request=health_check
+    ):
+        await asyncio.Future() # Keep the server running forever
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(start_server())
+    except KeyboardInterrupt:
+        pass
