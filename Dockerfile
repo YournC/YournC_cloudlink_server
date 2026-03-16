@@ -14,4 +14,7 @@ RUN pip install cloudlink ujson cerberus snowflake-id websockets
 EXPOSE 10000
 
 # Run the server
-CMD ["python", "main.py"]
+if __name__ == "__main__":
+    print(f"Starting Cloudlink 4.0 server on port {port}...")
+    # Cloudlink 4 usually expects 'ip' instead of 'host'
+    server_inst.run(ip="0.0.0.0", port=port)
