@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from cloudlink import server
 from cloudlink.server.protocols import clpv4
 
-# 1. SILENCE THE LOGS: This stops the EOFError/InvalidMessage spam from Render pings
+# Silence the 'websockets' library logging to keep Render logs clean
 logging.getLogger("websockets").setLevel(logging.CRITICAL)
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
@@ -34,18 +34,23 @@ def main():
     port = int(os.environ.get("PORT", 10000))
     run_temporary_handler(port)
 
-    # 2. Configure Cloudlink for Web compatibility
+    # Initialize Cloudlink
     server_inst = server()
     
-    # Allows PenguinMod/TurboWarp to connect without security rejections
+    # 1. Disable Origin Check (REQUIRED for PenguinMod)
     server_inst.check_origin = False 
     
-    # Load the protocol
-    cl_protocol = clpv4(server_inst)
-
-    print(f"Cloudlink 4.0 is LIVE. Connection string: wss://{os.environ.get('RENDER_EXTERNAL_HOSTNAME', 'your-url')}")
+    # 2. Add a custom handler to ignore non-websocket pings after startup
+    def ignore_http_pings(path, headers):
+        if "upgrade" not in headers.get("Connection", "").lower():
+            return (200, [], b"OK") # Tell Render we are alive without crashing
+        return None # Continue with normal WebSocket handshake
     
-    # Bind to 0.0.0.0 to ensure the proxy can route traffic
+    # Apply the fix to the underlying websocket engine
+    server_inst.ws.process_request = ignore_http_pings
+
+    cl_protocol = clpv4(server_inst)
+    print(f"Cloudlink 4.0 is LIVE for PenguinMod on port {port}")
     server_inst.run(ip="0.0.0.0", port=port)
 
 if __name__ == "__main__":
