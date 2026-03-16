@@ -28,14 +28,18 @@ def run_temporary_handler(port):
 
 def main():
     port = int(os.environ.get("PORT", 10000))
-
-    # 2. Run the temporary handler to "Greenlight" the deploy
     run_temporary_handler(port)
 
-    # 3. Now start the real Cloudlink server
+    # Initialize Cloudlink
     server_inst = server()
-    cl_protocol = clpv4(server_inst)
+    
+    # RELAX ORIGIN CHECK:
+    # This tells the server to accept connections even if the 'Origin' 
+    # header doesn't match.
+    server_inst.check_origin = False 
 
+    cl_protocol = clpv4(server_inst)
+    
     print(f"Cloudlink 4.0 starting on port {port}...")
     server_inst.run(ip="0.0.0.0", port=port)
 
